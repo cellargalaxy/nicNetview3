@@ -1,2 +1,6 @@
 # nicNetview3
-搭配https://github.com/cellargalaxy/nicPersonnel和https://github.com/cellargalaxy/nicWx2使用
+搭配使用
+
+人员：https://github.com/cellargalaxy/nicPersonnel
+
+微信：https://github.com/cellargalaxy/nicWx2
