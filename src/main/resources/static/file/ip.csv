@@ -1,0 +1,2 @@
+id,model,name,buyDate,area,build,floor,number,ip,checkTimes,isWarn,remark,installDate
+编号(字符串),机型(字符串),名字(字符串),购买日期(yyy/MM/dd),校区(字符串),楼栋(字符串),楼层(字符串),序号(数字),ip(字符串),检测次数(数字),"是否警告(0:否,1:是)",备注(字符串),安装日期(yyy/MM/dd)

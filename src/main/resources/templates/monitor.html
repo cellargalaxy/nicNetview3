@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head th:include="global :: head('设备管理')"></head>
+<body>
+<div class="container">
+    <div class="row" th:include="global :: navigation"></div>
+
+    <div class="row">
+        <div class="col-sm-2" th:include="global :: stackedNavigation"></div>
+
+        <div class="col-sm-10">
+            <div class="page-header">
+                <h1>欢迎登录</h1>
+            </div>
+            <p>这些是一些瞎逼逼的简介</p>
+        </div>
+    </div>
+</div>
+
+<div th:include="global :: globalJs"></div>
+<div th:include="global :: privateJs(${token})"></div>
+<script>
+    var stackedNavigation = createStackedNavigationVue();
+    stackedNavigation.loadData({
+        result: true, data: [
+            {url: getRootUrl() + '/page/listNetview', name: '监控', status: false},
+            {url: getRootUrl() + '/page/listEquipment', name: '设备列表', status: false},
+            {url: getRootUrl() + '/page/listPlace', name: '地点列表', status: false},
+            {url: getRootUrl() + '/page/listMalfunction', name: '故障列表', status: false},
+            {url: getRootUrl() + '/page/addEquipment', name: '添加设备', status: false},
+            {url: getRootUrl() + '/page/addEquipments', name: '批量添加设备', status: false}
+        ]
+    });
+</script>
+</body>
+</html>

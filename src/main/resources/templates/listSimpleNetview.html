@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml">
+<head th:include="global :: head('nic监控')"></head>
+<body>
+<div class="container">
+    <div class="row" th:include="global :: navigation"></div>
+
+    <div class="row" th:fragment="listSimpleNetviewTable(builds)">
+        <div class="jumbotron" style="text-align: center" th:if="${#lists.size(builds)==0}">
+            <h1>设备一切正常</h1>
+        </div>
+        <div id="listSimpleNetviewTable" class="panel-group" th:if="${#lists.size(builds)>0}">
+            <div class="panel panel-default" th:each="build : ${builds}">
+                <div class="panel-heading">
+                    <h4 class="panel-title" data-toggle="collapse" th:href="|#${build.name}|"><a
+                            th:text="${build.name}"></a><span class="label label-danger"><span th:if="${!build.status}"
+                                                                                               class="glyphicon glyphicon-info-sign"></span></span>
+                    </h4>
+                </div>
+                <div th:id="${build.name}" class="panel-collapse collapse in">
+                    <div class="panel-body">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>地址</th>
+                                <th>日期</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr th:each="equipment : ${build.equipments}"
+                                th:class="${equipment.status}?'success':'danger'">
+                                <td th:text="|${equipment.build}-${equipment.floor}|">D-319</td>
+                                <td th:text="|断开时间：${#dates.format(equipment.date, 'MM-dd kk:mm:ss')}|">12-12 09:12:32
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div th:include="global :: globalJs"></div>
+<script>
+    setTimeout('location.reload(true)', 60000);
+</script>
+</body>
+</html>

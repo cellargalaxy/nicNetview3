@@ -1,0 +1,2 @@
+id,name,sex,college,grade,professionClass,phone,cornet,qq,birthday,introduction,team,password
+学号(字符串),名字(字符串),性别(字符串),学院(字符串),年级(数字),专业班级(字符串),手机(字符串),短号(字符串),qq(字符串),生日(yyyy/MM/dd),简介(字符串),组别(字符串),密码(字符串)

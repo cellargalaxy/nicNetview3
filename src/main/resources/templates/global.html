@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en" xmlns:th="http://www.w3.org/1999/xhtml" xmlns:v-on="http://www.w3.org/1999/xhtml">
+<head th:fragment="head(title)">
+    <meta charset="utf-8"/>
+    <meta http-equiv="X-UA-Compatible" content="IE=edge"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1"/>
+    <link th:href="@{/css/bootstrap.min.css}" rel="stylesheet" href="/netview/static/css/bootstrap.min.css"
+          integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous"/>
+    <link th:href="@{/css/bootstrap-theme.min.css}" rel="stylesheet" href="/netview/static/css/bootstrap-theme.min.css"
+          integrity="sha384-rHyoN1iRsVXV4nD0JutlnGaslCJuC7uwjduW9SVrLvRYooPp2bWYgmgJQIXwl/Sp" crossorigin="anonymous"/>
+
+    <link th:href="@{/image/favicon.ico}" rel="shortcut icon" type="image/ico"
+          href="/netview/static/image/favicon.ico"/>
+    <title th:text="${title}">global</title>
+</head>
+<body>
+<div class="container">
+
+    <div class="row" th:fragment="navigation">
+        <nav class="navbar navbar-default" role="navigation">
+            <div class="container-fluid">
+                <div class="navbar-header">
+                    <a class="navbar-brand" th:href="@{/}">netview</a>
+                </div>
+                <ul class="nav navbar-nav">
+                    <li><a th:href="@{/page}">监控</a></li>
+                    <li><a href="/personnel/page">人员管理</a></li>
+                </ul>
+                <ul class="nav navbar-nav navbar-right">
+                    <li th:if="${session.loginPerson==null}"><a href="/personnel/signUp}"><span
+                            class="glyphicon glyphicon-user"></span> 注册</a></li>
+                    <li th:if="${session.loginPerson==null}"><a th:href="@{/login}"><span
+                            class="glyphicon glyphicon-log-in"></span> 登录</a></li>
+                    <li th:if="${session.loginPerson!=null}"><a th:text="|你好 ${session.loginPerson}|"></a></li>
+                </ul>
+            </div>
+        </nav>
+    </div>
+
+
+    <div class="row" th:fragment="loginPersonnelForm(info)">
+        <div class="page-header">
+            <h3>后台登录
+                <small><span class="label label-danger" th:text="${info}">危险标签</span></small>
+            </h3>
+        </div>
+        <form class="form-horizontal" role="form" id="loginPersonnelForm" onsubmit="return false">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">学号</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入学号" v-model="id"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">密码</label>
+                <div class="col-sm-10">
+                    <input type="password" class="form-control" v-model="password"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-0 col-sm-12">
+                    <button class="btn btn-lg btn-primary btn-block" v-on:click="loginPersonnel">登录</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+    <div class="row" style="text-align: center" th:fragment="pagination">
+        <ul id="pagination" class="pagination">
+            <li v-on:click="flipPage(1)" :class="1==localPage?'active':''"><a href="#">首页</a></li>
+            <li v-for="page in pages" v-on:click="flipPage(page)" :class="page==localPage?'active':''"><a href="#">{{
+                page }}</a></li>
+            <li v-on:click="flipPage(pageCount)" :class="pageCount==localPage?'active':''"><a href="#">末页</a></li>
+        </ul>
+    </div>
+
+
+    <div class="row">
+        <div class="col-sm-3" th:fragment="stackedNavigation">
+            <ul id="stackedNavigation" class="nav nav-pills nav-stacked">
+                <li v-for="navigation in navigations" role="presentation" :class="navigation.status?'active':''"><a
+                        :href="navigation.url">{{ navigation.name }}</a></li>
+            </ul>
+        </div>
+    </div>
+
+
+    <div class="row" th:fragment="listNetviewTable">
+        <div id="listNetviewTable" class="panel-group">
+            <button type="button" class="btn btn-info" v-on:click="repeatNetview"><span
+                    class="glyphicon glyphicon-repeat"></span> 重置监控状态
+            </button>
+            <button type="button" class="btn btn-info" v-on:click="inquireNetview"><span
+                    class="glyphicon glyphicon-refresh"></span> 刷新
+            </button>
+            <hr/>
+            <div class="panel panel-default" v-for="build in builds">
+                <div class="panel-heading">
+                    <h4 class="panel-title" data-toggle="collapse" :href="'#'+build.name">
+                        {{ build.name }} <span class="label label-danger"><span v-if="!build.status"
+                                                                                class="glyphicon glyphicon-info-sign"></span></span>
+                    </h4>
+                </div>
+                <div :id="build.name" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>地址</th>
+                                <th>ip</th>
+                                <th>延时</th>
+                                <th>日期</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="equipment in build.equipments" :class="equipment.status?'success':'danger'">
+                                <td>{{ equipment.build }}-{{ equipment.floor }}-{{ equipment.model }}-{{
+                                    equipment.number }}
+                                </td>
+                                <td>{{ equipment.ip }}</td>
+                                <td>
+                                    <span v-for="pingResult in equipment.pingResults"
+                                          :class="pingResult.delay>-1?'label label-success':'label label-danger'">{{ pingResult.delay }}</span>
+                                </td>
+                                <td>断开时间：{{ equipment.date }}</td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row" th:fragment="listEquipmentTable">
+        <div id="listEquipmentTable" class="panel-group">
+            <div class="panel panel-default" v-for="build in builds">
+                <div class="panel-heading">
+                    <h4 class="panel-title" data-toggle="collapse" :href="'#'+build.name">
+                        {{ build.name }}
+                    </h4>
+                </div>
+                <div :id="build.name" class="panel-collapse collapse">
+                    <div class="panel-body">
+                        <table class="table table-hover">
+                            <thead>
+                            <tr>
+                                <th>编号</th>
+                                <th>机型</th>
+                                <th>名字</th>
+                                <th>购置日期</th>
+                                <th>校区</th>
+                                <th>楼栋</th>
+                                <th>楼层</th>
+                                <th>序号</th>
+                                <th>ip</th>
+                                <th>检测次数</th>
+                                <th>是否警报</th>
+                                <th>备注</th>
+                                <th>安装日期</th>
+                                <th>删除</th>
+                            </tr>
+                            </thead>
+                            <tbody>
+                            <tr v-for="equipment in build.equipments">
+                                <td><a :href="rootUrl + '/page/changeEquipment/' + equipment.id">{{ equipment.id
+                                    }}</a></td>
+                                <td>{{ equipment.model }}</td>
+                                <td>{{ equipment.name }}</td>
+                                <td>{{ equipment.buyDate }}</td>
+                                <td>{{ equipment.area }}</td>
+                                <td>{{ equipment.build }}</td>
+                                <td>{{ equipment.floor }}</td>
+                                <td>{{ equipment.number }}</td>
+                                <td>{{ equipment.ip }}</td>
+                                <td>{{ equipment.checkTimes }}</td>
+                                <td>{{ equipment.isWarn==1?'是':'否' }}</td>
+                                <td>{{ equipment.remark }}</td>
+                                <td>{{ equipment.installDate }}</td>
+                                <td>
+                                    <button type="button" class="btn btn-danger"
+                                            v-on:click="removeEquipment(equipment.id)">删除
+                                    </button>
+                                </td>
+                            </tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="row" th:fragment="listPlaceTable">
+        <table id="listPlaceTable" class="table table-hover">
+            <thead>
+            <tr>
+                <th>校区</th>
+                <th>楼栋</th>
+                <th>楼层</th>
+                <th>序号</th>
+                <th>删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr>
+                <td><input type="text" class="form-control" placeholder="校区" v-model="area"/></td>
+                <td><input type="text" class="form-control" placeholder="楼栋" v-model="build"/></td>
+                <td><input type="text" class="form-control" placeholder="楼层" v-model="floor"/></td>
+                <td><input type="number" class="form-control" v-model="number"/></td>
+                <td>
+                    <button type="button" class="btn btn-info" v-on:click="addPlace">添加</button>
+                </td>
+            </tr>
+            <tr v-for="place in places">
+                <td>{{ place.area }}</td>
+                <td>{{ place.build }}</td>
+                <td>{{ place.floor }}</td>
+                <td>{{ place.number }}</td>
+                <td>
+                    <button type="button" class="btn btn-danger"
+                            v-on:click="removePlace(place.area,place.build,place.floor,place.number)">删除
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="row" th:fragment="listMalfunctionTable">
+        <table id="listMalfunctionTable" class="table table-hover">
+            <thead>
+            <tr>
+                <th>校区</th>
+                <th>楼栋</th>
+                <th>楼层</th>
+                <th>序号</th>
+                <th>编号</th>
+                <th>故障时间</th>
+                <th>故障状态</th>
+                <th>删除</th>
+            </tr>
+            </thead>
+            <tbody>
+            <tr v-for="malfunction in malfunctions">
+                <td>{{ malfunction.area }}</td>
+                <td>{{ malfunction.build }}</td>
+                <td>{{ malfunction.floor }}</td>
+                <td>{{ malfunction.number }}</td>
+                <td>{{ malfunction.equipmentId }}</td>
+                <td>{{ malfunction.malfunctionDatetime }}</td>
+                <td>{{ malfunction.status==0?'挂':'通' }}</td>
+                <td>
+                    <button type="button" class="btn btn-danger"
+                            v-on:click="removeMalfunction(malfunction.area,malfunction.build,malfunction.floor,malfunction.number,malfunction.equipmentId,malfunction.malfunctionDatetime)">
+                        删除
+                    </button>
+                </td>
+            </tr>
+            </tbody>
+        </table>
+    </div>
+
+
+    <div class="row" th:fragment="equipmentForm">
+        <form id="equipmentForm" class="form-horizontal" role="form" onsubmit="return false">
+            <div class="form-group">
+                <label class="col-sm-2 control-label">编号 *</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入编号" v-model="equipment.id"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">机型 *</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入机型" v-model="equipment.model"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">名字</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入名字" v-model="equipment.name"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">购置日期 *</label>
+                <div class="col-sm-10">
+                    <input type="date" class="form-control" v-model="equipment.buyDate"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">校区</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入校区" v-model="equipment.area"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">楼栋</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入楼栋" v-model="equipment.build"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">楼层</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入楼层" v-model="equipment.floor"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">序号</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="equipment.number"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">ip</label>
+                <div class="col-sm-10">
+                    <input type="text" class="form-control" placeholder="请输入ip" v-model="equipment.ip"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">检测次数</label>
+                <div class="col-sm-10">
+                    <input type="number" class="form-control" v-model="equipment.checkTimes"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">是否警报</label>
+                <div class="col-sm-10">
+                    <label class="radio-inline">
+                        <input type="radio" name="sex" value="1" checked="checked" v-model="equipment.isWarn"/> 是
+                    </label>
+                    <label class="radio-inline">
+                        <input type="radio" name="sex" value="0" v-model="equipment.isWarn"/> 否
+                    </label>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">备注</label>
+                <div class="col-sm-10">
+                    <textarea name="introduction" class="form-control" rows="3" placeholder="255个字符以内"
+                              maxlength="255" v-model="equipment.remark"></textarea>
+                </div>
+            </div>
+            <div class="form-group">
+                <label class="col-sm-2 control-label">安装日期</label>
+                <div class="col-sm-10">
+                    <input type="date" class="form-control" v-model="equipment.installDate"/>
+                </div>
+            </div>
+            <div class="form-group">
+                <div class="col-sm-offset-2 col-sm-8">
+                    <button type="submit" class="btn btn-lg btn-primary btn-block" v-on:click="post">提交</button>
+                </div>
+            </div>
+        </form>
+    </div>
+
+
+    <div class="row" th:fragment="addEquipmentsForm">
+        <div id="addEquipmentsForm">
+            <form class="form-horizontal row" role="form" onsubmit="return false">
+                <div class="form-group">
+                    <label class="col-sm-2 control-label">设备文件</label>
+                    <div class="col-sm-10">
+                        <input class="form-control" type="file" id="equipmentFile"/>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <div class="col-sm-offset-2 col-sm-8">
+                        <button type="button" class="btn btn-lg btn-primary btn-block"
+                                v-on:click="uploadFile">提交
+                        </button>
+                    </div>
+                </div>
+            </form>
+            <div class="panel-group row">
+                <div class="panel panel-default">
+                    <div class="panel-heading">
+                        <h4 class="panel-title" data-toggle="collapse" href="#failAddEquipments">{{ build.name }}</h4>
+                    </div>
+                    <div id="failAddEquipments" class="panel-collapse collapse in">
+                        <div class="panel-body">
+                            <table class="table table-hover">
+                                <thead>
+                                <tr>
+                                    <th>编号</th>
+                                    <th>机型</th>
+                                    <th>名字</th>
+                                    <th>购置日期</th>
+                                    <th>校区</th>
+                                    <th>楼栋</th>
+                                    <th>楼层</th>
+                                    <th>序号</th>
+                                    <th>ip</th>
+                                    <th>检测次数</th>
+                                    <th>是否警报</th>
+                                    <th>备注</th>
+                                    <th>安装日期</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr v-for="equipment in build.equipments">
+                                    <td>{{ equipment.id }}</td>
+                                    <td>{{ equipment.model }}</td>
+                                    <td>{{ equipment.name }}</td>
+                                    <td>{{ equipment.buyDate }}</td>
+                                    <td>{{ equipment.area }}</td>
+                                    <td>{{ equipment.build }}</td>
+                                    <td>{{ equipment.floor }}</td>
+                                    <td>{{ equipment.number }}</td>
+                                    <td>{{ equipment.ip }}</td>
+                                    <td>{{ equipment.checkTimes }}</td>
+                                    <td>{{ equipment.isWarn }}</td>
+                                    <td>{{ equipment.remark }}</td>
+                                    <td>{{ equipment.installDate }}</td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<div th:fragment="globalJs">
+    <script>
+        Date.prototype.format = function (fmt) {
+            var o = {
+                "M+": this.getMonth() + 1, //月份
+                "d+": this.getDate(), //日
+                "h+": this.getHours(), //小时
+                "m+": this.getMinutes(), //分
+                "s+": this.getSeconds(), //秒
+                "q+": Math.floor((this.getMonth() + 3) / 3), //季度
+                "S": this.getMilliseconds() //毫秒
+            };
+            if (/(y+)/.test(fmt)) {
+                fmt = fmt.replace(RegExp.$1, (this.getFullYear() + "").substr(4 - RegExp.$1.length));
+            }
+            for (var k in o) {
+                if (new RegExp("(" + k + ")").test(fmt)) {
+                    fmt = fmt.replace(RegExp.$1, (RegExp.$1.length == 1) ?
+                        (o[k]) : (("00" + o[k]).substr(("" + o[k]).length)));
+                }
+            }
+            return fmt;
+        }
+    </script>
+    <script th:src="@{/js/jquery-3.2.1.min.js}" type="text/javascript"
+            src="/netview/static/js/jquery-3.2.1.min.js"></script>
+    <script th:src="@{/js/bootstrap.min.js}" src="/netview/static/js/bootstrap.min.js"
+            integrity="sha384-Tc5IQib027qvyjSMfHjOMaLkfuWVxZxUPnCJA7l2mCWNIpG9mGCD8wGNIcPD7Txa"
+            crossorigin="anonymous"></script>
+    <script th:src="@{/js/vue.js}" src="/netview/static/js/vue.js"></script>
+    <script th:src="@{/js/global.js}" src="/netview/static/js/global.js"></script>
+    <input type="hidden" th:value="@{/}" value="" id="rootUrl"/>
+</div>
+<div th:fragment="privateJs(token)">
+    <script th:src="@{/js/private.js}" src="/netview/static/js/private.js"></script>
+    <input type="hidden" th:value="${token}" value="token" id="token"/>
+</div>
+
+<script>
+
+
+    //    function createListPersonTableVue() {
+    //        var listPersonTableVue = new Vue({
+    //            el: '#listPersonTable',
+    //            data: {
+    //                persons: []
+    //            },
+    //            methods: {
+    //                inquirePersons: function (page) {
+    //                    inquirePersons(this,page);
+    //                },
+    //                inquirePersonById: function (id) {
+    //                    inquirePersonById(this,id);
+    //                },
+    //                loadData: function (data) {
+    //                    if (data.result) {
+    //                        this.persons = data.data;
+    //                    }
+    //                }
+    //            }
+    //        });
+    //        return listPersonTableVue;
+    //    }
+    var listPermissionTableVue = createListPermissionTableVue();
+    listPermissionTableVue.loadData({
+        result: true,
+        data: [{permission: 1, remark: 'remark1'}, {permission: 2, remark: 'remark2'}]
+    });
+
+    var paginationVue = createPaginationVue();
+    paginationVue.loadData({result: true, data: 5});
+
+    var listPersonTableVue = createListPersonTableVue();
+    listPersonTableVue.loadData({
+        result: true, data: [{
+            id: 'id',
+            name: 'name',
+            sex: 'sex',
+            college: 'college',
+            grade: 'grade',
+            professionClass: 'professionClass',
+            phone: 'phone',
+            cornet: 'cornet',
+            qq: 'qq',
+            birthday: 'birthday',
+            introduction: 'introduction',
+            team: 'team'
+        }]
+    });
+
+    var listAuthorizedTableVue = createListAuthorizedTableVue();
+    listAuthorizedTableVue.loadData({
+        result: true,
+        data: [{personId: 'personId1', permission: 'permission1'}, {personId: 'personId2', permission: 'permission2'}]
+    });
+    listAuthorizedTableVue.loadPermissions({
+        result: true,
+        data: [{permission: 1, remark: 'remark1'}, {permission: 2, remark: 'remark2'}]
+    });
+
+    var stackedNavigation = createStackedNavigationVue();
+    stackedNavigation.loadData({
+        result: true,
+        data: [{url: 'url1', name: 'name1', status: true}, {url: 'url2', name: 'name2', status: false}]
+    });
+
+    var personFormVue = createPersonFormVue();
+    personFormVue.loadData({
+        result: true, data: {
+            id: 'id',
+            name: 'name',
+            sex: '女',
+            college: 'college',
+            grade: 15,
+            professionClass: 'professionClass',
+            phone: 13612341234,
+            cornet: 666666,
+            qq: 1574976087,
+            birthday: '2017-07-07',
+            introduction: 'introduction',
+            team: '技术组'
+        }
+    });
+
+    var pingResults = [{date: '2017-7-7', delay: 1}, {date: '2017-7-7', delay: -1}];
+    var equipments = [
+        {
+            id: 'abcdef',
+            model: 'S2352',
+            name: 'name',
+            buyDate: '2017-7-7',
+            area: '龙洞',
+            build: 'A1',
+            floor: '202',
+            number: 1,
+            ip: '127.0.0.1',
+            checkTimes: 3,
+            isWarn: 1,
+            remark: 'remark',
+            installDate: '2017-7-7',
+            status: true,
+            date: '7-7 20:20:20',
+            pingResults: pingResults
+        },
+        {
+            id: 'ghijklmn',
+            model: 'S2352',
+            name: 'name',
+            buyDate: '2017-7-7',
+            area: '龙洞',
+            build: 'A1',
+            floor: '202',
+            number: 1,
+            ip: '127.0.0.1',
+            checkTimes: 3,
+            isWarn: 1,
+            remark: 'remark',
+            installDate: '2017-7-7',
+            status: false,
+            date: '7-7 20:20:20',
+            pingResults: pingResults
+        }
+    ];
+
+    var listNetviewTableVue = createListNetviewTableVue();
+    listNetviewTableVue.loadData({
+        result: true,
+        data: [{equipments: equipments, name: 'A1', status: true}, {equipments: equipments, name: 'A2', status: false}]
+    });
+
+    var listEquipmentTableVue = createListEquipmentTableVue();
+    listEquipmentTableVue.loadData({
+        result: true,
+        data: [{equipments: equipments, name: 'B1'}, {equipments: equipments, name: 'B2'}]
+    });
+
+    var listPlaceTableVue = createListPlaceTableVue();
+    listPlaceTableVue.loadData({
+        result: true,
+        data: [{area: 'area', build: 'build', floor: 'floor', number: 1}, {
+            area: 'area',
+            build: 'build',
+            floor: 'floor',
+            number: 2
+        }]
+    });
+
+    var listMalfunctionTableVue = createListMalfunctionTableVue();
+    listMalfunctionTableVue.loadData({
+        result: true, data: [
+            {
+                area: 'area',
+                build: 'build',
+                floor: 'floor',
+                number: 1,
+                equipmentId: 'abcdef',
+                malfunctionDatetime: '2017-7-7',
+                status: 0
+            },
+            {
+                area: 'area',
+                build: 'build',
+                floor: 'floor',
+                number: 2,
+                equipmentId: 'ghijk',
+                malfunctionDatetime: '2018-8-8',
+                status: 1
+            }
+        ]
+    });
+
+    var equipmentFormVue = createEquipmentFormVue(null);
+    equipmentFormVue.loadData({
+        result: true,
+        data: {
+            id: 'abcdef',
+            model: 'S3389',
+            name: 'name',
+            buyDate: '2017-07-07',
+            area: '龙洞',
+            build: 'A2',
+            floor: '202',
+            number: 1,
+            ip: '127.0.0.1',
+            checkTimes: 5,
+            isWarn: 0,
+            remark: 'remark',
+            installDate: '2018-08-08'
+        }
+    });
+
+    var addEquipmentsFormVue = createAddEquipmentsFormVue();
+    addEquipmentsFormVue.loadData({
+        result: true,
+        data: {equipments: equipments, name: '上传失败'}
+    });
+
+    var addPersonsFormVue = createAddPersonsFormVue();
+    addPersonsFormVue.loadData({
+        result: true, data: [{
+            id: 'id',
+            name: 'name',
+            sex: 'sex',
+            college: 'college',
+            grade: 'grade',
+            professionClass: 'professionClass',
+            phone: 'phone',
+            cornet: 'cornet',
+            qq: 'qq',
+            birthday: 'birthday',
+            introduction: 'introduction',
+            team: 'team',
+            password: 'password'
+        }]
+    });
+</script>
+
+
+</body>
+</html>
